@@ -8,7 +8,7 @@ export const EndScreen = () => {
   const dispatch = useDispatch()
   const { state, overallStats, treasure } = useSelector(s => s.simulation)
   const [susceptible, _1, recovered, dead] = _.nth(overallStats, -1) || [0, 0, 0, 0]
-  const infected = 32769078 - susceptible
+  const infected = 326378450 - susceptible
 
   return (
     state === SIMULATION_STATE_FINISHED && (

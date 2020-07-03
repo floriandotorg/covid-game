@@ -6,24 +6,26 @@ import { useSelector, useDispatch } from 'react-redux'
 import { simulationActivateMeasure, simulationDeactivateMeasure } from '../store/simulation'
 
 const Button = ({ measure }) => {
-  const { treasure, counterMeasures: measures } = useSelector(s => s.simulation)
+  const state = useSelector(s => s.simulation)
+  const { counterMeasures: measures } = state
   const dispatch = useDispatch()
 
-  const activate = ({ id }) => () => {
-    dispatch(simulationActivateMeasure(id))
-  }
-
-  const deactivate = ({ id }) => () => {
-    dispatch(simulationDeactivateMeasure(id))
-  }
-
   const activeMeasures = _.flow(fp.filter({ active: 0 }), fp.map('id'))(measures)
+
+  const onClick = () => {
+    if (measure.active === false) {
+      measure.activation && dispatch(measure.activation)
+      dispatch(simulationActivateMeasure(measure.id))
+    } else {
+      dispatch(simulationDeactivateMeasure(measure.id))
+    }
+  }
 
   return (
     <div className="tooltip-container">
       <button
-        onClick={measure.active === false ? activate(measure) : deactivate(measure)}
-        disabled={treasure < measure.cost || _.difference(_.get(measure, 'dependsOn', []), activeMeasures).length !== 0}
+        onClick={onClick}
+        disabled={_.difference(_.get(measure, 'dependsOn', []), activeMeasures).length !== 0 || measure.multiple && measure.active !== false || _.isFunction(measure.disabled) && measure.disabled(state)}
         className={classNames({ active: measure.active !== false })}
       >
         <div
@@ -32,14 +34,14 @@ const Button = ({ measure }) => {
             height: `${measure.active !== false && (measure.active / measure.days) * 100}%`
           }}
         />
-        <div className='name'>{measure.name}</div>
+        <div className='name'>{_.isFunction(measure.name) ? measure.name(state) : measure.name}</div>
       </button>
       <div className='tooltip'>
         {measure.description}
         {measure.description && <br />}
         {measure.dependsOn && <>Depends on: {measure.dependsOn.map(id => _.find(measures, { id }).name).join(', ')} <br /> </>}
-        Days until effective: {measure.days} <br />
-        {measure.cost} B$ / day
+        Fully effective after: {measure.days} days<br />
+        Economical impact: {_.isFunction(measure.cost) ? measure.cost(state).toLocaleString() : measure.cost} B$ / day
       </div>
     </div>
   )

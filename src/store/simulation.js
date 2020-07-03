@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import React from 'react'
 import regeneratorRuntime from 'regenerator-runtime'
 import { newsUpdateStats } from './news'
 
@@ -7,6 +8,8 @@ const SIMULATION_SET_STATS = 'SIMULATION_SET_STATS'
 const SIMULATION_NEXT_ROUND = 'SIMULATION_NEXT_ROUND'
 const SIMULATION_ACTIVATE_MEASURE = 'SIMULATION_ACTIVATE_MEASURE'
 const SIMULATION_DEACTIVATE_MEASURE = 'SIMULATION_DEACTIVATE_MEASURE'
+const SIMULATION_UPDATE_TEST_CAPACITY = 'SIMULATION_UPDATE_TEST_CAPACITY'
+const SIMULATION_UPDATE_CREDIT = 'SIMULATION_UPDATE_CREDIT'
 const SIMULATION_END = 'SIMULATION_END'
 
 export const SIMULATION_STATE_IDLE = 'SIMULATION_STATE_IDLE'
@@ -14,9 +17,25 @@ export const SIMULATION_STATE_CALCULATING = 'SIMULATION_STATE_CALCULATING'
 export const SIMULATION_STATE_WAITING = 'SIMULATION_STATE_WAITING'
 export const SIMULATION_STATE_FINISHED = 'SIMULATION_STATE_FINISHED'
 
+const simulationUpdateTestCapacity = delta => ({
+  type: SIMULATION_UPDATE_TEST_CAPACITY,
+  payload: {
+    delta
+  }
+})
+
+const simulationUpdateCredit = delta => ({
+  type: SIMULATION_UPDATE_CREDIT,
+  payload: {
+    delta
+  }
+})
+
 const defaultState = {
   state: SIMULATION_STATE_IDLE,
   treasure: 20,
+  testCapacity: 0,
+  credit: 0,
   day: 0,
   stats: {
     susceptible: [],
@@ -72,6 +91,17 @@ const defaultState = {
       })
     },
     {
+      id: 'lockdown',
+      name: 'Strict Lockdown',
+      days: 2,
+      cost: 10,
+      active: false,
+      apply: factors => ({
+        ...factors,
+        socialDistancingFactor: factors.socialDistancingFactor + 0.9
+      })
+    },
+    {
       id: 'close-public-places',
       name: 'Close Public Places',
       days: 2,
@@ -83,27 +113,48 @@ const defaultState = {
       })
     },
     {
-      id: 'test-population',
-      name: '5,000 Tests / Day',
-      days: 3,
-      cost: 1,
+      id: 'increase-test-capacity',
+      name: state => <>Increase Test Capacity<br /><small>({state.testCapacity.toLocaleString()})</small></>,
+      days: 1,
+      cost: state => state.testCapacity/5000*0.2,
       active: false,
-      apply: factors => ({
-        ...factors,
-        numTests: factors.numTests + 5000
-      })
+      multiple: true,
+      activation: simulationUpdateTestCapacity(5000),
+      apply: x => x
     },
     {
-      id: 'test-population-2',
-      name: '15,000 Tests / Day',
-      days: 2,
-      cost: 1,
+      id: 'reduce-test-capacity',
+      name: state => <>Reduce Test Capacity<br /><small>({state.testCapacity.toLocaleString()})</small></>,
+      days: 1,
+      cost: state => (state.testCapacity-5000)/5000*0.2,
+      disabled: state => state.testCapacity < 5000,
       active: false,
-      dependsOn: ['test-population'],
-      apply: factors => ({
-        ...factors,
-        numTests: factors.numTests + 10000
-      })
+      multiple: true,
+      hide: false,
+      activation: simulationUpdateTestCapacity(-5000),
+      apply: x => x
+    },
+    {
+      id: 'increase-credit',
+      name: state => <>Increase Credit<br /><small>({state.credit.toLocaleString()})</small></>,
+      days: 1,
+      cost: state => state.credit/20*0.1,
+      active: false,
+      multiple: true,
+      activation: simulationUpdateCredit(20),
+      apply: x => x
+    },
+    {
+      id: 'reduce-credit',
+      name: state => <>Reduce Credit<br /><small>({state.credit.toLocaleString()})</small></>,
+      days: 1,
+      cost: state => (state.credit-20)/20*0.1,
+      disabled: state => state.credit < 20,
+      active: false,
+      multiple: true,
+      hide: false,
+      activation: simulationUpdateCredit(-20),
+      apply: x => x
     },
     {
       id: 'quarantine',
@@ -111,7 +162,6 @@ const defaultState = {
       days: 2,
       cost: 5,
       active: false,
-      dependsOn: ['test-population'],
       apply: factors => ({
         ...factors,
         quarantineActive:  1
@@ -119,13 +169,27 @@ const defaultState = {
     },
     {
       id: 'app',
-      name: 'Develop App',
-      days: 10,
+      name: 'Develop app',
+      description: 'Develop and deploy a contact tracking app. About 20 % will install it.',
+      days: 5,
       cost: 0,
       active: false,
       apply: factors => ({
         ...factors,
-        quarantineActive:  1
+        appFactor: factors.appFactor + 0.18
+      })
+    },
+    {
+      id: 'app-mandatory',
+      name: 'Make app mandatory',
+      description: 'Force people to install app. Will result in 80 % adoption rate.',
+      days: 1,
+      cost: 0,
+      active: false,
+      dependsOn: ['app'],
+      apply: factors => ({
+        ...factors,
+        appFactor: factors.appFactor + 0.62
       })
     }
   ]
@@ -171,7 +235,7 @@ const nextRound = async (instance, dispatch, getState) => {
   dispatch(simulationNextRound())
 
   const {
-    simulation: { counterMeasures, day, stats: oldStats, overallStats: oldOverall, treasure }
+    simulation: { counterMeasures, day, stats: oldStats, overallStats: oldOverall, treasure, testCapacity }
   } = getState()
   const factors = _.reduce(
     counterMeasures,
@@ -180,13 +244,12 @@ const nextRound = async (instance, dispatch, getState) => {
       domesticTravelDampingFactor: 0,
       travelDampingFactor: 0,
       socialDistancingFactor: 0,
-      numTests: 0,
       quarantineActive: 0,
       appFactor: 0
     }
   )
 
-  instance.step(factors.domesticTravelDampingFactor, factors.travelDampingFactor, factors.socialDistancingFactor, factors.numTests * factors.quarantineActive, factors.appFactor)
+  instance.step(Math.min(factors.domesticTravelDampingFactor, 1), Math.min(factors.travelDampingFactor, 1), Math.min(factors.socialDistancingFactor, 1), testCapacity * factors.quarantineActive, Math.min(factors.appFactor, 1))
 
   await sleep(2000)
   while (instance.getProgress() !== 1) {
@@ -240,8 +303,11 @@ export const simulationReducer = (state = defaultState, action) => {
         counterMeasures: state.counterMeasures.map(measure => ({
           ...measure,
           active: measure.active > 0 ? measure.active - 1 : measure.active
+        })).map(measure => ({
+          ...measure,
+          active: (measure.active === 0 && measure.multiple) ? false : measure.active
         })),
-        treasure: state.treasure + 10 - _.reduce(state.counterMeasures, (n, m) => n + (m.active === 0 ? m.cost : 0), 0),
+        treasure: state.treasure + 10 - _.reduce(state.counterMeasures, (n, m) => n + (_.isFunction(m.cost) ? (!m.hide ? m.cost(state) : 0) : (m.active === 0 ? m.cost : 0)), 0),
         state: SIMULATION_STATE_CALCULATING
       }
     case SIMULATION_SET_STATS: {
@@ -259,8 +325,18 @@ export const simulationReducer = (state = defaultState, action) => {
         counterMeasures: state.counterMeasures.map(measure => ({
           ...measure,
           active: measure.id === action.payload.id ? measure.days : measure.active
-        })),
-        treasure: state.treasure - _.find(state.counterMeasures, { id: action.payload.id }).cost
+        }))
+      }
+    case SIMULATION_UPDATE_TEST_CAPACITY:
+      return {
+        ...state,
+        testCapacity: state.testCapacity + action.payload.delta
+      }
+    case SIMULATION_UPDATE_CREDIT:
+      return {
+        ...state,
+        credit: state.credit + action.payload.delta,
+        treasure: state.treasure + action.payload.delta
       }
     case SIMULATION_DEACTIVATE_MEASURE:
       return {

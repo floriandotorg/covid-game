@@ -1,3 +1,5 @@
+$header-height: 40px;
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
@@ -10,21 +12,26 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-#stats-header {
+header {
   position: fixed;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   background: lightgrey;
+  height: $header-height;
+}
+
+#stats-header {
+  display: flex;
 
   > .stats {
     display: flex;
     margin-left: -10px;
     padding: 10px 20px;
+    width: 30%;
 
     > div {
       margin-left: 10px;
-      min-width: 100px;
       white-space: nowrap;
       text-align: center;
       flex-basis: content;
@@ -44,6 +51,8 @@ code {
     text-align: center;
     position: relative;
     padding: 10px 20px;
+    width: 30%;
+    margin-left: auto;
 
     &:before {
       position: absolute;
@@ -68,6 +77,7 @@ code {
 #map-container {
   text-align: center;
   padding-top: 20vh;
+  transform: scale(0.9);
 }
 
 #counter-measures {
@@ -76,15 +86,8 @@ code {
   flex-wrap: wrap;
   position: fixed;
   left: 0;
-  top: 0;
-
-  > div {
-    &:not(:last-child) {
-      button {
-        border-bottom: none;
-      }
-    }
-  }
+  top: $header-height;
+  max-height: 90vh;
 
   button {
     background: none;
@@ -92,6 +95,8 @@ code {
     width: 100px;
     height: 100px;
     position: relative;
+    margin-top: -1px;
+    margin-left: -1px;
 
     &:after {
       content: '';
@@ -108,13 +113,16 @@ code {
       outline: none;
     }
 
-    &:disabled,
     &.active {
       color: black;
 
       &:after {
         background: lightcyan;
       }
+    }
+
+    &:disabled {
+      background: #717171
     }
 
     > .name {
@@ -160,8 +168,8 @@ code {
 
 #charts-bar {
   position: fixed;
-  top: 0%;
-  right: 0%;
+  top: $header-height;
+  right: 0;
   background: black;
   width: 20vw;
 

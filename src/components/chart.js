@@ -1,7 +1,8 @@
 import _ from 'lodash'
 import React from 'react'
-import Plot from 'react-plotly.js'
-import { useSelector } from 'react-redux'
+import Plotly from "plotly.js-basic-dist"
+import createPlotlyComponent from "react-plotly.js/factory"
+const Plot = createPlotlyComponent(Plotly)
 
 export const Chart = ({ y, x, name, color, min, max, line, log, type = 'scatter' }) => (
   <div className='chart'>
