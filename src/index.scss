@@ -1,0 +1,227 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
+    'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+#stats-header {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: lightgrey;
+
+  > .stats {
+    display: flex;
+    margin-left: -10px;
+    padding: 10px 20px;
+
+    > div {
+      margin-left: 10px;
+      min-width: 100px;
+      white-space: nowrap;
+      text-align: center;
+      flex-basis: content;
+
+      &.warning,
+      &.infectious {
+        color: red;
+      }
+
+      &.recovered {
+        color: green;
+      }
+    }
+  }
+
+  > .day {
+    text-align: center;
+    position: relative;
+    padding: 10px 20px;
+
+    &:before {
+      position: absolute;
+      content: '';
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background: green;
+      z-index: -1;
+      transition: none;
+      width: 0;
+    }
+
+    &.full:before {
+      width: 100%;
+      transition: width 2s linear;
+    }
+  }
+}
+
+#map-container {
+  text-align: center;
+  padding-top: 20vh;
+}
+
+#counter-measures {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  position: fixed;
+  left: 0;
+  top: 0;
+
+  > div {
+    &:not(:last-child) {
+      button {
+        border-bottom: none;
+      }
+    }
+  }
+
+  button {
+    background: none;
+    border: solid 1px black;
+    width: 100px;
+    height: 100px;
+    position: relative;
+
+    &:after {
+      content: '';
+      background: lightgray;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -2;
+    }
+
+    &:active {
+      outline: none;
+    }
+
+    &:disabled,
+    &.active {
+      color: black;
+
+      &:after {
+        background: lightcyan;
+      }
+    }
+
+    > .name {
+      padding: 10px;
+    }
+
+    > .process {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: darkgrey;
+      z-index: -1;
+      display: none;
+    }
+  }
+}
+
+.tooltip-container {
+  position: relative;
+
+  .tooltip {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20vw;
+    background: darkgray;
+    font-size: 12px;
+    border: black solid 1px;
+    padding: 10px;
+    display: none;
+    z-index: 998;
+    pointer-events: none;
+    text-align: left;
+  }
+
+  &:hover {
+    .tooltip {
+      display: block;
+    }
+  }
+}
+
+#charts-bar {
+  position: fixed;
+  top: 0%;
+  right: 0%;
+  background: black;
+  width: 20vw;
+
+  > .chart {
+    > h3 {
+      color: white;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    > .js-plotly-plot {
+      height: 100px;
+      width: 100%;
+    }
+  }
+}
+
+#end-screen {
+  background: rgba(black, 0.75);
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  z-index: 999;
+
+  > div {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 5px;
+    background: grey;
+    padding: 20px 50px;
+  }
+}
+
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: lightgrey;
+}
+
+#news-ticker {
+  padding-top: 15px;
+  padding-bottom: 5px;
+}
+
+#copyright {
+  padding: 5px 10px;
+  text-align: center;
+  font-size: 10px;
+}
+
+.red {
+  color: red;
+}
+
+.green {
+  color: green;
+}
