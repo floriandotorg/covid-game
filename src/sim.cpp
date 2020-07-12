@@ -66,11 +66,7 @@ const float TRAVELS_PER_CAPITA = 0.005f;
 const float MIN_DAYS_SICK = 5.f;
 const float MAX_DAYS_SICK = 20.f - MIN_DAYS_SICK;
 
-#ifdef __EMSCRIPTEN__
-const std::size_t NUM_THREADS = 4;
-#else
-const std::size_t NUM_THREADS = 7;
-#endif
+const std::size_t NUM_THREADS = 10;
 
 static_assert(static_cast<int>(std::size(counties) / static_cast<float>(NUM_THREADS)) == std::size(counties) / static_cast<float>(NUM_THREADS));
 static_assert(std::size(biggest) == std::size(counties));
@@ -210,7 +206,7 @@ public:
     for (std::size_t n = 0; n < std::size(counties); n += part_size)
     {
       threads.push_back(std::thread([this, n, social_distancing_factor, num_tests, part_size, app_factor]() {
-        for (std::size_t m = n; m < n + part_size - 1; ++m)
+        for (std::size_t m = n; m < n + part_size; ++m)
         {
           const auto begin = pop.begin() + counties[m];
           const auto end = m == std::size(counties) - 1 ? pop.end() : pop.begin() + counties[m + 1];
