@@ -29,8 +29,7 @@ module.exports = merge(common, {
       patterns: [
         'src/sim*js',
         'src/*.wasm',
-        'src/*.mp3',
-        'src/*.svg'
+        'src/*.mp3'
       ]
     }),
     new webpack.optimize.ModuleConcatenationPlugin()

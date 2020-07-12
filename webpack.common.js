@@ -24,7 +24,7 @@ module.exports = {
       },
       {
         test: /\.svg$/,
-        loader: 'file-loader'
+        loader: 'raw-loader'
       },
       {
         test: /\.wasm$/,
