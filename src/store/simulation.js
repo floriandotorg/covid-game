@@ -33,7 +33,6 @@ const simulationUpdateCredit = delta => ({
 
 const defaultState = {
   state: SIMULATION_STATE_IDLE,
-  treasure: 20,
   testCapacity: 0,
   credit: 0,
   day: 0,
@@ -50,7 +49,6 @@ const defaultState = {
       id: 'ban-domestic-flight',
       name: 'Ban Domestic Flight',
       days: 3,
-      cost: 2,
       active: false,
       apply: factors => ({
         ...factors,
@@ -61,7 +59,6 @@ const defaultState = {
       id: 'close-state-borders',
       name: 'Close State Borders',
       days: 3,
-      cost: 5,
       active: false,
       apply: factors => ({
         ...factors,
@@ -72,7 +69,6 @@ const defaultState = {
       id: 'close-restaurants',
       name: 'Close Restaurants',
       days: 2,
-      cost: 3,
       active: false,
       apply: factors => ({
         ...factors,
@@ -83,7 +79,6 @@ const defaultState = {
       id: 'close-schools',
       name: 'Close Schools',
       days: 2,
-      cost: 1,
       active: false,
       apply: factors => ({
         ...factors,
@@ -94,7 +89,6 @@ const defaultState = {
       id: 'lockdown',
       name: 'Strict Lockdown',
       days: 2,
-      cost: 10,
       active: false,
       apply: factors => ({
         ...factors,
@@ -105,7 +99,6 @@ const defaultState = {
       id: 'close-public-places',
       name: 'Close Public Places',
       days: 2,
-      cost: 1,
       active: false,
       apply: factors => ({
         ...factors,
@@ -116,7 +109,6 @@ const defaultState = {
       id: 'increase-test-capacity',
       name: state => <>Increase Test Capacity<br /><small>({state.testCapacity.toLocaleString()})</small></>,
       days: 1,
-      cost: state => state.testCapacity/5000*0.2,
       active: false,
       multiple: true,
       activation: simulationUpdateTestCapacity(5000),
@@ -126,7 +118,6 @@ const defaultState = {
       id: 'reduce-test-capacity',
       name: state => <>Reduce Test Capacity<br /><small>({state.testCapacity.toLocaleString()})</small></>,
       days: 1,
-      cost: state => (state.testCapacity-5000)/5000*0.2,
       disabled: state => state.testCapacity < 5000,
       active: false,
       multiple: true,
@@ -138,7 +129,6 @@ const defaultState = {
       id: 'increase-credit',
       name: state => <>Increase Credit<br /><small>({state.credit.toLocaleString()})</small></>,
       days: 1,
-      cost: state => state.credit/20*0.1,
       active: false,
       multiple: true,
       activation: simulationUpdateCredit(20),
@@ -148,7 +138,6 @@ const defaultState = {
       id: 'reduce-credit',
       name: state => <>Reduce Credit<br /><small>({state.credit.toLocaleString()})</small></>,
       days: 1,
-      cost: state => (state.credit-20)/20*0.1,
       disabled: state => state.credit < 20,
       active: false,
       multiple: true,
@@ -160,7 +149,6 @@ const defaultState = {
       id: 'quarantine',
       name: 'Quarantine',
       days: 2,
-      cost: 5,
       active: false,
       apply: factors => ({
         ...factors,
@@ -172,7 +160,6 @@ const defaultState = {
       name: 'Develop app',
       description: 'Develop and deploy a contact tracking app. About 20 % will install it.',
       days: 5,
-      cost: 0,
       active: false,
       apply: factors => ({
         ...factors,
@@ -184,7 +171,6 @@ const defaultState = {
       name: 'Make app mandatory',
       description: 'Force people to install app. Will result in 80 % adoption rate.',
       days: 1,
-      cost: 0,
       active: false,
       dependsOn: ['app'],
       apply: factors => ({
@@ -235,7 +221,7 @@ const nextRound = async (instance, dispatch, getState) => {
   dispatch(simulationNextRound())
 
   const {
-    simulation: { counterMeasures, day, stats: oldStats, overallStats: oldOverall, treasure, testCapacity }
+    simulation: { counterMeasures, day, stats: oldStats, overallStats: oldOverall, testCapacity }
   } = getState()
   const factors = _.reduce(
     counterMeasures,
@@ -279,7 +265,7 @@ const nextRound = async (instance, dispatch, getState) => {
 
   dispatch(simulationSetStats(stats, overall))
 
-  if ((day > 10 && _.sum(instance.getInfectious()) < 10) || treasure < 0) {
+  if ((day > 10 && _.sum(instance.getInfectious()) < 10)) {
     dispatch(simulationEnd())
   } else {
     nextRound(instance, dispatch, getState)
@@ -307,7 +293,6 @@ export const simulationReducer = (state = defaultState, action) => {
           ...measure,
           active: (measure.active === 0 && measure.multiple) ? false : measure.active
         })),
-        treasure: state.treasure + 10 - _.reduce(state.counterMeasures, (n, m) => n + (_.isFunction(m.cost) ? (!m.hide ? m.cost(state) : 0) : (m.active === 0 ? m.cost : 0)), 0),
         state: SIMULATION_STATE_CALCULATING
       }
     case SIMULATION_SET_STATS: {
@@ -335,8 +320,7 @@ export const simulationReducer = (state = defaultState, action) => {
     case SIMULATION_UPDATE_CREDIT:
       return {
         ...state,
-        credit: state.credit + action.payload.delta,
-        treasure: state.treasure + action.payload.delta
+        credit: state.credit + action.payload.delta
       }
     case SIMULATION_DEACTIVATE_MEASURE:
       return {

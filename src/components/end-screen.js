@@ -6,7 +6,7 @@ import { SIMULATION_STATE_FINISHED, simulationStart } from '../store/simulation'
 
 export const EndScreen = () => {
   const dispatch = useDispatch()
-  const { state, overallStats, treasure } = useSelector(s => s.simulation)
+  const { state, overallStats } = useSelector(s => s.simulation)
   const [susceptible, _1, recovered, dead] = _.nth(overallStats, -1) || [0, 0, 0, 0]
   const infected = 326378450 - susceptible
 
@@ -14,7 +14,7 @@ export const EndScreen = () => {
     state === SIMULATION_STATE_FINISHED && (
       <div id='end-screen'>
         <div>
-          <h1>{treasure > 0 ? 'Pedamic Ended' : 'Bankruptcy'}</h1>
+          <h1>Pedamic Ended</h1>
 
           <div className='stats'>
             <p>Total Infected: {HRNumbers.toHumanString(infected)}</p>

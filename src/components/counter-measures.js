@@ -40,8 +40,7 @@ const Button = ({ measure }) => {
         {measure.description}
         {measure.description && <br />}
         {measure.dependsOn && <>Depends on: {measure.dependsOn.map(id => _.find(measures, { id }).name).join(', ')} <br /> </>}
-        Fully effective after: {measure.days} days<br />
-        Economical impact: {_.isFunction(measure.cost) ? measure.cost(state).toLocaleString() : measure.cost} B$ / day
+        Fully effective after: {measure.days} days
       </div>
     </div>
   )
