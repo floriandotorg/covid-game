@@ -1,4 +1,6 @@
 import _ from 'lodash'
+import fp from 'lodash/fp'
+import { SIMULATION_NEXT_ROUND } from './simulation'
 import counties from '../counties.json'
 
 const NEWS_ADD = 'NEWS_ADD'
@@ -77,8 +79,9 @@ const generateFor = (key, text, priority) => {
     const states = new Set()
 
     for (let n = 0; n < stats[key].length; ++n) {
-      if (oldStats[key][n] === 0 && stats[key][n] > 0 && counties[n]) {
-        states.add(counties[n].name.match(/, ([A-Z]{2})/)[1])
+      const countyName = _.findKey(counties, { n })
+      if (oldStats[key][n] === 0 && stats[key][n] > 0 && countyName) {
+        states.add(countyName.match(/, ([A-Z]{2})/)[1])
       }
     }
 
@@ -178,6 +181,11 @@ export const newsRemove = id => ({
 let n = 0
 const sentNews = []
 
+const updateLifetime = fp.flow([
+  fp.map(n => ({ ...n, lifetime: n.lifetime - 1})),
+  fp.filter(n => n.lifetime > 0)
+])
+
 export const newsReducer = (state = defaultState, action) => {
   switch (action.type) {
     case NEWS_ADD:
@@ -187,7 +195,7 @@ export const newsReducer = (state = defaultState, action) => {
         return {
           ...state,
           announcements: _.sortBy(
-            [...state.announcements, { id: ++n, priority, text: `+++ ${announcement} +++` }],
+            [...state.announcements, { id: ++n, priority, text: `+++ ${announcement} +++`, lifetime: 5 }],
             'priority'
           ).reverse()
         }
@@ -197,6 +205,11 @@ export const newsReducer = (state = defaultState, action) => {
       return {
         ...state,
         announcements: _.reject(state.announcements, { id: action.payload.id })
+      }
+    case SIMULATION_NEXT_ROUND:
+      return {
+        ...state,
+        announcements: updateLifetime(state.announcements)
       }
     default:
       return state
