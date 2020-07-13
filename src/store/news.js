@@ -72,14 +72,21 @@ const stateNames = {
   WY: 'Wyoming'
 }
 
+const countiesByNumber = fp.flow([
+  fp.values,
+  fp.map('n'),
+  fp.max,
+  fp.times(n => _.findKey(counties, { n }))
+])(counties)
+
 const generateFor = (key, text, priority) => {
   const already = new Set()
 
-  return (dispatch, oldStats, stats) => {
+  return (sendNews, oldStats, stats) => {
     const states = new Set()
 
     for (let n = 0; n < stats[key].length; ++n) {
-      const countyName = _.findKey(counties, { n })
+      const countyName = countiesByNumber[n]
       if (oldStats[key][n] === 0 && stats[key][n] > 0 && countyName) {
         states.add(countyName.match(/, ([A-Z]{2})/)[1])
       }
@@ -88,7 +95,7 @@ const generateFor = (key, text, priority) => {
     Array.from(states)
       .filter(s => !already.has(s))
       .map(s => stateNames[s])
-      .forEach(state => dispatch(newsAdd(_.sample(text)(state), priority)))
+      .forEach(state => sendNews(_.sample(text)(state), priority))
 
     states.forEach(s => already.add(s))
   }
@@ -123,43 +130,52 @@ const randomNews = [
   'Big airline is cutting 6,000 jobs'
 ]
 
+const sentNews = new Set()
+
 export const newsUpdateStats = (dispatch, oldStats, stats, oldOverall, overall) => {
-  generateForInfectious(dispatch, oldStats, stats)
-  genergenerateForDead(dispatch, oldStats, stats)
+  const sendNews = (announcement) => {
+    if (!sentNews.has(announcement)) {
+      sentNews.add(announcement)
+      dispatch(newsAdd(announcement))
+    }
+  }
+
+  generateForInfectious(sendNews, oldStats, stats)
+  genergenerateForDead(sendNews, oldStats, stats)
 
   const [oldSusceptible, oldInfectious, oldRecovered, oldDead, oldBeds] = _.last(oldOverall) || []
   const [susceptible, infectious, recovered, dead, beds] = overall
 
   if (infectious > 0) {
-    dispatch(newsAdd('COVID19: The fight has begun', 4))
+    sendNews('COVID19: The fight has begun', 4)
   }
 
   if (dead > 0) {
-    dispatch(newsAdd('First COVID19 Dead in the US', 4))
+    sendNews('First COVID19 Dead in the US', 9)
   }
 
   if (recovered > 0) {
-    dispatch(newsAdd('US: First Patient Recovered from COVID19', 4))
+    sendNews('US: First Patient Recovered from COVID19', 4)
   }
 
   if (oldBeds - beds > 0.2 * 6000) {
-    dispatch(newsAdd('Health System Collapsing', 10))
+    sendNews('Health System Collapsing', 10)
   }
 
   if (infectious > 1000) {
-    dispatch(newsAdd('1,000 confirmed cases of COVID19 in the US', 10))
+    sendNews('1,000 confirmed cases of COVID19 in the US', 10)
   }
 
   if (infectious > 1000000) {
-    dispatch(newsAdd('1 Mio. confirmed cases of COVID19 in the US', 10))
+    sendNews('1 Mio. confirmed cases of COVID19 in the US', 10)
   }
 
   if (infectious - oldInfectious > 1000) {
-    dispatch(newsAdd('COVID-Crisis: More then 1,000 new infections per day', 15))
+    sendNews('COVID-Crisis: More then 1,000 new infections per day', 15)
   }
 
-  if (Math.random() < 0.1) {
-    dispatch(newsAdd(_.sample(randomNews), 20))
+  if (infectious > 1000 && Math.random() < 0.1) {
+    sendNews(_.sample(randomNews), 20)
   }
 }
 
@@ -179,7 +195,6 @@ export const newsRemove = id => ({
 })
 
 let n = 0
-const sentNews = []
 
 const updateLifetime = fp.flow([
   fp.map(n => ({ ...n, lifetime: n.lifetime - 1})),
@@ -190,15 +205,12 @@ export const newsReducer = (state = defaultState, action) => {
   switch (action.type) {
     case NEWS_ADD:
       const { priority, announcement } = action.payload
-      if (!sentNews.includes(announcement)) {
-        sentNews.push(announcement)
-        return {
-          ...state,
-          announcements: _.sortBy(
-            [...state.announcements, { id: ++n, priority, text: `+++ ${announcement} +++`, lifetime: 5 }],
-            'priority'
-          ).reverse()
-        }
+      return {
+        ...state,
+        announcements: _.sortBy(
+          [...state.announcements, { id: ++n, priority, text: `+++ ${announcement} +++`, lifetime: 5 }],
+          'priority'
+        ).reverse()
       }
       return state
     case NEWS_REMOVE:
