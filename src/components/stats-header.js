@@ -1,12 +1,13 @@
 import _ from 'lodash'
 import React, { useState, useEffect } from 'react'
 import classNames from 'classnames'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import HRNumbers from 'human-readable-numbers'
-import { SIMULATION_STATE_CALCULATING } from '../store/simulation'
+import { SIMULATION_STATE_CALCULATING, simulationSetReset } from '../store/simulation'
 
 export const StatsHeader = () => {
-  const { state, day, overallStats } = useSelector(s => s.simulation)
+  const dispatch = useDispatch()
+  const { state, day, overallStats, shouldReset } = useSelector(s => s.simulation)
   const [full, setFull] = useState(false)
 
   const os = _.last(overallStats) || [0, 0, 0, 0, 0]
@@ -32,6 +33,9 @@ export const StatsHeader = () => {
             {HRNumbers.toHumanString(os[3])} {diff(os[3], os2[3])}
           </div>
         </div>
+        <button onClick={() => dispatch(simulationSetReset())} disabled={shouldReset}>
+          {shouldReset ? 'Resetting ..' : 'Reset'}
+        </button>
         <div className={classNames('day', { full })}>Day {day}</div>
       </div>
     </header>

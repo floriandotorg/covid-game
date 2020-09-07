@@ -9,6 +9,7 @@ const SIMULATION_SET_PARAMETER = 'SIMULATION_SET_PARAMETER'
 export const SIMULATION_NEXT_ROUND = 'SIMULATION_NEXT_ROUND'
 const SIMULATION_UPDATE_CREDIT = 'SIMULATION_UPDATE_CREDIT'
 const SIMULATION_END = 'SIMULATION_END'
+const SIMULATION_SET_RESET = 'SIMULATION_SET_RESET'
 
 export const SIMULATION_STATE_IDLE = 'SIMULATION_STATE_IDLE'
 export const SIMULATION_STATE_CALCULATING = 'SIMULATION_STATE_CALCULATING'
@@ -34,6 +35,7 @@ const defaultState = {
     appFactor: 0,
     maskAdoption: 0
   },
+  shouldReset: false,
   overallStats: [],
 }
 
@@ -55,6 +57,10 @@ const simulationNextRound = () => ({
 
 const simulationEnd = () => ({
   type: SIMULATION_END
+})
+
+export const simulationSetReset = () => ({
+  type: SIMULATION_SET_RESET
 })
 
 export const simulationActivateMeasure = id => ({
@@ -84,7 +90,7 @@ const nextRound = async (instance, dispatch, getState) => {
   dispatch(simulationNextRound())
 
   const {
-    simulation: { day, stats: oldStats, overallStats: oldOverall, parameter }
+    simulation: { day, stats: oldStats, overallStats: oldOverall, parameter, shouldReset }
   } = getState()
 
   instance.step(Math.min(parameter.domesticTravelDampingFactor, 1), Math.min(parameter.travelDampingFactor, 1), Math.min(parameter.socialDistancingFactor, 1), parameter.testCapacity, Math.min(parameter.appFactor, 1), parameter.maskAdoption * 0.7)
@@ -117,10 +123,15 @@ const nextRound = async (instance, dispatch, getState) => {
 
   dispatch(simulationSetStats(stats, overall))
 
-  if ((day > 10 && _.sum(instance.getInfectious()) < 10)) {
+  if (shouldReset) {
     dispatch(simulationEnd())
+    setTimeout(() => dispatch(simulationStart()))
   } else {
-    nextRound(instance, dispatch, getState)
+    if ((day > 10 && _.sum(instance.getInfectious()) < 10)) {
+      dispatch(simulationEnd())
+    } else {
+      nextRound(instance, dispatch, getState)
+    }
   }
 }
 
@@ -161,6 +172,11 @@ export const simulationReducer = (state = defaultState, action) => {
       return {
         ...state,
         credit: state.credit + action.payload.delta
+      }
+    case SIMULATION_SET_RESET:
+      return {
+        ...state,
+        shouldReset: true
       }
     case SIMULATION_END:
       return {
