@@ -16,7 +16,7 @@ const prepareNewInfections = fp.flow(
 
 export const ChartsBar = () => {
   const [initalBeds, setInitialBeds] = useState()
-  const { overallStats, counterMeasures: measures } = useSelector(s => s.simulation)
+  const { overallStats } = useSelector(s => s.simulation)
 
   useEffect(() => {
     if (!initalBeds && !_.isEmpty(overallStats)) {
@@ -37,7 +37,7 @@ export const ChartsBar = () => {
       <Chart y={_.map(overallStats, 3)} name='Dead' color='red' min={0} max={1000000} />
       <Chart y={_.map(overallStats, 2)} name='Recovered' color='green' min={0} max={20000000} />
       <Chart y={_.map(overallStats, 4)} name='ICUs' color='lightblue' min={0} max={initalBeds} />
-      {_.find(measures, { id: 'quarantine' }).active === 0 && <Chart y={_.map(overallStats, 5)} name='Quarantined' color='yellow' min={0} max={1000} />}
+      <Chart y={_.map(overallStats, 5)} name='Quarantined' color='yellow' min={0} max={1000} />
     </div>
   )
 }

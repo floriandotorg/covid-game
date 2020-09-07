@@ -3,55 +3,31 @@ import fp from 'lodash/fp'
 import React from 'react'
 import classNames from 'classnames'
 import { useSelector, useDispatch } from 'react-redux'
-import { simulationActivateMeasure, simulationDeactivateMeasure } from '../store/simulation'
+import Slider from 'rc-slider'
+import 'rc-slider/assets/index.css'
+import { simulationSetParameter } from '../store/simulation'
 
-const Button = ({ measure }) => {
-  const state = useSelector(s => s.simulation)
-  const { counterMeasures: measures } = state
+const Measure = ({ title, name, marks, max = 100 }) => {
   const dispatch = useDispatch()
-
-  const activeMeasures = _.flow(fp.filter({ active: 0 }), fp.map('id'))(measures)
-
-  const onClick = () => {
-    if (measure.active === false) {
-      measure.activation && dispatch(measure.activation)
-      dispatch(simulationActivateMeasure(measure.id))
-    } else {
-      dispatch(simulationDeactivateMeasure(measure.id))
-    }
-  }
+  const parameter = useSelector(s => s.simulation.parameter)
 
   return (
-    <div className="tooltip-container">
-      <button
-        onClick={onClick}
-        disabled={_.difference(_.get(measure, 'dependsOn', []), activeMeasures).length !== 0 || measure.multiple && measure.active !== false || _.isFunction(measure.disabled) && measure.disabled(state)}
-        className={classNames({ active: measure.active !== false })}
-      >
-        <div
-          className='process'
-          style={{
-            height: `${measure.active !== false && (measure.active / measure.days) * 100}%`
-          }}
-        />
-        <div className='name'>{_.isFunction(measure.name) ? measure.name(state) : measure.name}</div>
-      </button>
-      <div className='tooltip'>
-        {measure.description}
-        {measure.description && <br />}
-        {measure.dependsOn && <>Depends on: {measure.dependsOn.map(id => _.find(measures, { id }).name).join(', ')} <br /> </>}
-        Fully effective after: {measure.days} days
-      </div>
+    <div className="measure">
+      <h2>{title}</h2>
+      <Slider min={0} max={max} marks={marks} included={false} onChange={value => dispatch(simulationSetParameter({[name]: value / 100}))} value={parameter[name] * 100} />
     </div>
   )
 }
 
-export const CounterMeasures = () => {
-  const { counterMeasures } = useSelector(s => s.simulation)
+const MAX_TESTS = 32624540 * 100;
 
-  return (
-    <div id='counter-measures'>
-      {counterMeasures.map(measure => <Button key={measure.name} measure={measure} />)}
-    </div>
-  )
-}
+export const CounterMeasures = () => (
+  <div id='counter-measures'>
+    <Measure title='Social Distancing' name='socialDistancingFactor' marks={{0: 'no restrictions', 50: 'moderate', 90: 'strict', 100: 'unrealistic'}}/>
+    <Measure title='Mask Adoption' name='maskAdoption' marks={{0: '0%', 100: '100%'}} />
+    <Measure title='Travel' name='travelDampingFactor' marks={{0: 'normal', 100: 'no travel'}} />
+    <Measure title='Domestic Travel' name='domesticTravelDampingFactor' marks={{0: 'normal', 100: 'no travel'}} />
+    <Measure title='App Installs' name='appFactor' marks={{0: '0%', 100: '100%'}} />
+    <Measure title='Test per day' name='testCapacity' marks={{0: '0', [MAX_TESTS]: '300 Mio.'}} max={MAX_TESTS} />
+  </div>
+)

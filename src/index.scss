@@ -92,63 +92,16 @@ header {
 }
 
 #counter-measures {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
   position: fixed;
   left: 0;
   top: $header-height;
+  width: 15vw;
   max-height: 90vh;
 
-  button {
-    background: none;
-    border: solid 1px black;
-    width: 100px;
-    height: 100px;
-    position: relative;
-    margin-top: -1px;
-    margin-left: -1px;
-
-    &:after {
-      content: '';
-      background: lightgray;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: -2;
-    }
-
-    &:active {
-      outline: none;
-    }
-
-    &.active {
-      color: black;
-
-      &:after {
-        background: lightcyan;
-      }
-    }
-
-    &:disabled {
-      background: #717171
-    }
-
-    > .name {
-      padding: 10px;
-    }
-
-    > .process {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: darkgrey;
-      z-index: -1;
-      display: none;
-    }
+  > .measure {
+    width: 100%;
+    background: grey;
+    padding: 0 20px;
   }
 }
 

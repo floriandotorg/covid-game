@@ -37,11 +37,13 @@ export const Chart = ({ y, x, name, color, min, max, line, log, type = 'scatter'
           showline: false,
           zeroline: false,
           visible: false,
+          fixedrange: true,
           type: log && 'log',
           autorange: log && true
         },
         xaxis: {
           visible: false,
+          fixedrange: true,
           range: [0, _.max([x ? 0 : 60, y.length])]
         },
         shapes: line && [
