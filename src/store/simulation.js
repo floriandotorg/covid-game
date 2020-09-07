@@ -5,10 +5,8 @@ import { newsUpdateStats } from './news'
 
 const SIMULATION_RESET = 'SIMULATION_RESET'
 const SIMULATION_SET_STATS = 'SIMULATION_SET_STATS'
+const SIMULATION_SET_PARAMETER = 'SIMULATION_SET_PARAMETER'
 export const SIMULATION_NEXT_ROUND = 'SIMULATION_NEXT_ROUND'
-const SIMULATION_ACTIVATE_MEASURE = 'SIMULATION_ACTIVATE_MEASURE'
-const SIMULATION_DEACTIVATE_MEASURE = 'SIMULATION_DEACTIVATE_MEASURE'
-const SIMULATION_UPDATE_TEST_CAPACITY = 'SIMULATION_UPDATE_TEST_CAPACITY'
 const SIMULATION_UPDATE_CREDIT = 'SIMULATION_UPDATE_CREDIT'
 const SIMULATION_END = 'SIMULATION_END'
 
@@ -17,23 +15,8 @@ export const SIMULATION_STATE_CALCULATING = 'SIMULATION_STATE_CALCULATING'
 export const SIMULATION_STATE_WAITING = 'SIMULATION_STATE_WAITING'
 export const SIMULATION_STATE_FINISHED = 'SIMULATION_STATE_FINISHED'
 
-const simulationUpdateTestCapacity = delta => ({
-  type: SIMULATION_UPDATE_TEST_CAPACITY,
-  payload: {
-    delta
-  }
-})
-
-const simulationUpdateCredit = delta => ({
-  type: SIMULATION_UPDATE_CREDIT,
-  payload: {
-    delta
-  }
-})
-
 const defaultState = {
   state: SIMULATION_STATE_IDLE,
-  testCapacity: 0,
   credit: 0,
   day: 0,
   stats: {
@@ -43,142 +26,15 @@ const defaultState = {
     dead: [],
     beds: []
   },
+  parameter: {
+    domesticTravelDampingFactor: 0,
+    travelDampingFactor: 0,
+    socialDistancingFactor: 0,
+    testCapacity: 0,
+    appFactor: 0,
+    maskAdoption: 0
+  },
   overallStats: [],
-  counterMeasures: [
-    {
-      id: 'ban-domestic-flight',
-      name: 'Ban Domestic Flight',
-      days: 3,
-      active: false,
-      apply: factors => ({
-        ...factors,
-        domesticTravelDampingFactor: 0.8
-      })
-    },
-    {
-      id: 'close-state-borders',
-      name: 'Close State Borders',
-      days: 3,
-      active: false,
-      apply: factors => ({
-        ...factors,
-        travelDampingFactor: 0.8
-      })
-    },
-    {
-      id: 'close-restaurants',
-      name: 'Close Restaurants',
-      days: 2,
-      active: false,
-      apply: factors => ({
-        ...factors,
-        socialDistancingFactor: factors.socialDistancingFactor + 0.05
-      })
-    },
-    {
-      id: 'close-schools',
-      name: 'Close Schools',
-      days: 2,
-      active: false,
-      apply: factors => ({
-        ...factors,
-        socialDistancingFactor: factors.socialDistancingFactor + 0.15
-      })
-    },
-    {
-      id: 'lockdown',
-      name: 'Strict Lockdown',
-      days: 2,
-      active: false,
-      apply: factors => ({
-        ...factors,
-        socialDistancingFactor: factors.socialDistancingFactor + 0.9
-      })
-    },
-    {
-      id: 'close-public-places',
-      name: 'Close Public Places',
-      days: 2,
-      active: false,
-      apply: factors => ({
-        ...factors,
-        socialDistancingFactor: factors.socialDistancingFactor + 0.15
-      })
-    },
-    {
-      id: 'increase-test-capacity',
-      name: state => <>Increase Test Capacity<br /><small>({state.testCapacity.toLocaleString()})</small></>,
-      days: 1,
-      active: false,
-      multiple: true,
-      activation: simulationUpdateTestCapacity(5000),
-      apply: x => x
-    },
-    {
-      id: 'reduce-test-capacity',
-      name: state => <>Reduce Test Capacity<br /><small>({state.testCapacity.toLocaleString()})</small></>,
-      days: 1,
-      disabled: state => state.testCapacity < 5000,
-      active: false,
-      multiple: true,
-      hide: false,
-      activation: simulationUpdateTestCapacity(-5000),
-      apply: x => x
-    },
-    {
-      id: 'increase-credit',
-      name: state => <>Increase Credit<br /><small>({state.credit.toLocaleString()})</small></>,
-      days: 1,
-      active: false,
-      multiple: true,
-      activation: simulationUpdateCredit(20),
-      apply: x => x
-    },
-    {
-      id: 'reduce-credit',
-      name: state => <>Reduce Credit<br /><small>({state.credit.toLocaleString()})</small></>,
-      days: 1,
-      disabled: state => state.credit < 20,
-      active: false,
-      multiple: true,
-      hide: false,
-      activation: simulationUpdateCredit(-20),
-      apply: x => x
-    },
-    {
-      id: 'quarantine',
-      name: 'Quarantine',
-      days: 2,
-      active: false,
-      apply: factors => ({
-        ...factors,
-        quarantineActive:  1
-      })
-    },
-    {
-      id: 'app',
-      name: 'Develop app',
-      description: 'Develop and deploy a contact tracking app. About 20 % will install it.',
-      days: 5,
-      active: false,
-      apply: factors => ({
-        ...factors,
-        appFactor: factors.appFactor + 0.18
-      })
-    },
-    {
-      id: 'app-mandatory',
-      name: 'Make app mandatory',
-      description: 'Force people to install app. Will result in 80 % adoption rate.',
-      days: 1,
-      active: false,
-      dependsOn: ['app'],
-      apply: factors => ({
-        ...factors,
-        appFactor: factors.appFactor + 0.62
-      })
-    }
-  ]
 }
 
 const simulationSetStats = (stats, overall) => ({
@@ -215,27 +71,23 @@ export const simulationDeactivateMeasure = id => ({
   }
 })
 
+export const simulationSetParameter = parameter => ({
+  type: SIMULATION_SET_PARAMETER,
+  payload: {
+    parameter
+  }
+})
+
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
 
 const nextRound = async (instance, dispatch, getState) => {
   dispatch(simulationNextRound())
 
   const {
-    simulation: { counterMeasures, day, stats: oldStats, overallStats: oldOverall, testCapacity }
+    simulation: { day, stats: oldStats, overallStats: oldOverall, parameter }
   } = getState()
-  const factors = _.reduce(
-    counterMeasures,
-    (factors, measure) => (measure.active === 0 ? measure.apply(factors) : factors),
-    {
-      domesticTravelDampingFactor: 0,
-      travelDampingFactor: 0,
-      socialDistancingFactor: 0,
-      quarantineActive: 0,
-      appFactor: 0
-    }
-  )
 
-  instance.step(Math.min(factors.domesticTravelDampingFactor, 1), Math.min(factors.travelDampingFactor, 1), Math.min(factors.socialDistancingFactor, 1), testCapacity * factors.quarantineActive, Math.min(factors.appFactor, 1))
+  instance.step(Math.min(parameter.domesticTravelDampingFactor, 1), Math.min(parameter.travelDampingFactor, 1), Math.min(parameter.socialDistancingFactor, 1), parameter.testCapacity, Math.min(parameter.appFactor, 1), parameter.maskAdoption * 0.7)
 
   await sleep(2000)
   while (instance.getProgress() !== 1) {
@@ -286,13 +138,6 @@ export const simulationReducer = (state = defaultState, action) => {
       return {
         ...state,
         day: state.day + 1,
-        counterMeasures: state.counterMeasures.map(measure => ({
-          ...measure,
-          active: measure.active > 0 ? measure.active - 1 : measure.active
-        })).map(measure => ({
-          ...measure,
-          active: (measure.active === 0 && measure.multiple) ? false : measure.active
-        })),
         state: SIMULATION_STATE_CALCULATING
       }
     case SIMULATION_SET_STATS: {
@@ -304,31 +149,18 @@ export const simulationReducer = (state = defaultState, action) => {
         overallStats: [...state.overallStats, overall]
       }
     }
-    case SIMULATION_ACTIVATE_MEASURE:
+    case SIMULATION_SET_PARAMETER:
       return {
         ...state,
-        counterMeasures: state.counterMeasures.map(measure => ({
-          ...measure,
-          active: measure.id === action.payload.id ? measure.days : measure.active
-        }))
-      }
-    case SIMULATION_UPDATE_TEST_CAPACITY:
-      return {
-        ...state,
-        testCapacity: state.testCapacity + action.payload.delta
+        parameter: {
+          ...state.parameter,
+          ...action.payload.parameter
+        }
       }
     case SIMULATION_UPDATE_CREDIT:
       return {
         ...state,
         credit: state.credit + action.payload.delta
-      }
-    case SIMULATION_DEACTIVATE_MEASURE:
-      return {
-        ...state,
-        counterMeasures: state.counterMeasures.map(measure => ({
-          ...measure,
-          active: measure.id === action.payload.id ? false : measure.active
-        }))
       }
     case SIMULATION_END:
       return {

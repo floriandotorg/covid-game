@@ -128,10 +128,10 @@ public:
     }
   }
 
-  void step(float domestic_travel_damping_factor, float travel_damping_factor, float social_distancing_factor, std::size_t num_tests, float app_factor)
+  void step(float domestic_travel_damping_factor, float travel_damping_factor, float social_distancing_factor, std::size_t num_tests, float app_factor, float infection_damping_factor)
   {
     progress = 0;
-    result = std::async(&simulation::do_step, this, domestic_travel_damping_factor, travel_damping_factor, social_distancing_factor, num_tests, app_factor);
+    result = std::async(&simulation::do_step, this, domestic_travel_damping_factor, travel_damping_factor, social_distancing_factor, num_tests, app_factor, infection_damping_factor);
   }
 
   float get_progress()
@@ -144,8 +144,10 @@ public:
     result.get();
   }
 
-  void do_step(float domestic_travel_damping_factor, float travel_damping_factor, float social_distancing_factor, std::size_t num_tests, float app_factor)
+  void do_step(float domestic_travel_damping_factor, float travel_damping_factor, float social_distancing_factor, std::size_t num_tests, float app_factor, float infection_damping_factor)
   {
+    rng.seed(rd);
+
     for_each_county([&](auto begin, auto end, auto n) {
       if (infectious[n] > 0)
       {
@@ -205,12 +207,12 @@ public:
     const std::size_t part_size = std::size(counties) / NUM_THREADS;
     for (std::size_t n = 0; n < std::size(counties); n += part_size)
     {
-      threads.push_back(std::thread([this, n, social_distancing_factor, num_tests, part_size, app_factor]() {
+      threads.push_back(std::thread([this, n, social_distancing_factor, num_tests, part_size, app_factor, infection_damping_factor]() {
         for (std::size_t m = n; m < n + part_size; ++m)
         {
           const auto begin = pop.begin() + counties[m];
           const auto end = m == std::size(counties) - 1 ? pop.end() : pop.begin() + counties[m + 1];
-          run_county(begin, end, m, social_distancing_factor, num_tests / part_size, app_factor);
+          run_county(begin, end, m, social_distancing_factor, num_tests, app_factor, infection_damping_factor);
           gen_stats(begin, end, m);
         }
       }));
@@ -288,7 +290,7 @@ private:
     }
   }
 
-  void run_county(uint8_t *begin, uint8_t *end, std::size_t n, float social_distancing_factor, std::size_t num_tests, float app_factor)
+  void run_county(uint8_t *begin, uint8_t *end, std::size_t n, float social_distancing_factor, std::size_t num_tests, float app_factor, float infection_damping_factor)
   {
     std::uniform_real_distribution<float> rng_infection;
 
@@ -348,7 +350,7 @@ private:
             {
               uint8_t &p2 = begin[rng_element(rng)];
 
-              if (get_state(p2) == STATE_HEALTHY && rng_infection(rng) < P)
+              if (get_state(p2) == STATE_HEALTHY && rng_infection(rng) < P * (1.f - infection_damping_factor))
               {
                 p2 = infect();
               }
@@ -363,12 +365,11 @@ private:
       }
     });
 
-    for (std::size_t n = 0; n < num_tests; ++n) {
-      uint8_t &p2 = begin[rng_element(rng)];
-      if (get_state(p2) == STATE_INFECTIOUS) {
-        set_state(p2, STATE_QUARANTINED);
+    std::for_each(begin, end, [&](auto &p) {
+      if (get_state(p) == STATE_INFECTIOUS && rng_infection(rng) <= static_cast<float>(num_tests) / static_cast<float>(POP_SIZE)) {
+        set_state(p, STATE_QUARANTINED);
       }
-    }
+    });
   }
 
   void gen_stats(uint8_t *begin, uint8_t *end, std::size_t n)
@@ -418,6 +419,7 @@ private:
 
   std::array<uint8_t, POP_SIZE> pop;
   std::array<std::size_t, std::size(counties)> beds;
+  std::random_device rd;
   xorshift rng;
   float progress;
   std::future<void> result;
@@ -435,7 +437,7 @@ int main()
 
   for (std::size_t n = 0; n < 150; ++n)
   {
-    bla.step(0, 0, 0, 0, 0);
+    bla.step(0, 0, 0, POP_SIZE*0.3, 0, 0.5);
     bla.wait_finished();
     bla.print();
   }
