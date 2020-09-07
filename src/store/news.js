@@ -108,9 +108,9 @@ const infectedNews = [
 ]
 
 const deadNews = [
-  state => `First Dead in ${state}`,
-  state => `COVID19 Claims First Victim in ${state}`,
-  state => `${state}: First Confirmed Dead`
+  state => `First dead in ${state}`,
+  state => `COVID19 claims first victim in ${state}`,
+  state => `${state}: First confirmed dead`
 ]
 
 const generateForInfectious = generateFor('infectious', infectedNews, 1)
@@ -119,24 +119,46 @@ const genergenerateForDead = generateFor('dead', deadNews, 2)
 const randomNews = [
   'Italiens leading pandemic expert: Corona is just a flu',
   'New Coronavirus more dangerous than first tought?',
-  'Europe under Lockdown',
-  'WHO Head Warns Worst of Virus Is Still Ahead',
-  'Potential COVID-19 Vaccine Shows Promise in Mouse Study',
-  'Biggest Theme Park in Europe closed',
+  'Europe under lockdown',
+  'WHO head warns worst of virus is still ahead',
+  'Potential COVID-19 vaccine shows promise in mouse study',
+  'Biggest theme park in Europe closed',
   'Dozens of Secret Service agents quarantined',
   'Luxury hotels swapped tourists for medical workers',
   'Companies are reassessing their supply chains',
   'US taxpayers are funding six COVID vaccines',
+  'Research team has isolated the COVID-19 virus',
+  'Study: 17.9% Of People With COVID-19 Coronavirus Had No Symptoms',
+  'Indoor transmission of SARS-CoV-2',
+  "Is the U.S. 'Flattening the Curve?'",
+  'How South Korea Flattened the Curve',
+  'Minister backs creating legal right to work from home',
+  '1st grader sets up impressive remote learning station',
+  '3 Ways to Use Video Conferencing with Students Learning Remotely',
+  'How to make a cloth face covering',
+  'Staying alert and safe (social distancing)',
+  "The Dos and Don’ts of 'Social Distancing'",
+  'New study reveals Oxford coronavirus vaccine produces strong immune response',
+  'Cheap antibody test sent for validation in coronavirus fight',
+  'Dutch researchers find Corona virus antibody',
+  'Coronavirus: Why everyone was wrong',
+  'Here’s how you can order a COVID-19 test',
+  'China approves 29-minute testing kit for new coronavirus',
+  "Minister buys 100,000 COVID-19 test kits to ensure 'safety for all'",
+  'Senate blocks $250 billion for coronavirus small business loans',
+  "New flu virus with 'pandemic potential' found in China'",
+  "Burger chain says 'No Mask, No Hamburgers'",
+  'The good news is: There is hope for humanity',
   'Big airline is cutting 6,000 jobs'
 ]
 
 const sentNews = new Set()
 
 export const newsUpdateStats = (dispatch, oldStats, stats, oldOverall, overall) => {
-  const sendNews = (announcement) => {
+  const sendNews = (announcement, priority, hasLifetime = true) => {
     if (!sentNews.has(announcement)) {
       sentNews.add(announcement)
-      dispatch(newsAdd(announcement))
+      dispatch(newsAdd(announcement, priority, hasLifetime))
     }
   }
 
@@ -151,15 +173,15 @@ export const newsUpdateStats = (dispatch, oldStats, stats, oldOverall, overall) 
   }
 
   if (dead > 0) {
-    sendNews('First COVID19 Dead in the US', 9)
+    sendNews('First COVID19 dead in the US', 9)
   }
 
   if (recovered > 0) {
-    sendNews('US: First Patient Recovered from COVID19', 4)
+    sendNews('US: First patient recovered from COVID19', 4)
   }
 
   if (oldBeds - beds > 0.2 * 6000) {
-    sendNews('Health System Collapsing', 10)
+    sendNews('Health system collapsing', 10)
   }
 
   if (infectious > 1000) {
@@ -174,16 +196,17 @@ export const newsUpdateStats = (dispatch, oldStats, stats, oldOverall, overall) 
     sendNews('COVID-Crisis: More then 1,000 new infections per day', 15)
   }
 
-  if (infectious > 1000 && Math.random() < 0.1) {
-    sendNews(_.sample(randomNews), 20)
+  if (infectious > 1000 && Math.random() < 0.3) {
+    sendNews(_.sample(randomNews), 20, false)
   }
 }
 
-export const newsAdd = (announcement, priority) => ({
+export const newsAdd = (announcement, priority, hasLifetime) => ({
   type: NEWS_ADD,
   payload: {
     announcement,
-    priority
+    priority,
+    hasLifetime
   }
 })
 
@@ -197,22 +220,21 @@ export const newsRemove = id => ({
 let n = 0
 
 const updateLifetime = fp.flow([
-  fp.map(n => ({ ...n, lifetime: n.lifetime - 1})),
+  fp.map(n => ({ ...n, lifetime: (n.hasLifetime ? n.lifetime - 1 : n.lifetime)})),
   fp.filter(n => n.lifetime > 0)
 ])
 
 export const newsReducer = (state = defaultState, action) => {
   switch (action.type) {
     case NEWS_ADD:
-      const { priority, announcement } = action.payload
+      const { priority, announcement, hasLifetime } = action.payload
       return {
         ...state,
         announcements: _.sortBy(
-          [...state.announcements, { id: ++n, priority, text: `+++ ${announcement} +++`, lifetime: 5 }],
+          [...state.announcements, { id: ++n, priority, text: `+++ ${announcement} +++`, lifetime: 5, hasLifetime }],
           'priority'
         ).reverse()
       }
-      return state
     case NEWS_REMOVE:
       return {
         ...state,
