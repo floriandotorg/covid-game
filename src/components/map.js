@@ -54,16 +54,19 @@ export const Map = () => {
       const name = title[0]['_']
       const { n, pop } = counties[name]
       if (n > -1 && stats.infectious[n] > 0) {
-        ctx.fillStyle = `rgba(255, 0, 0, ${(stats.infectious[n] > 0 ? 0.2 : 0) + (stats.infectious[n] / pop) * 0.8})`
-        ctx.fill(path)
+        ctx.fillStyle = `rgba(243, 2, 5, ${(stats.infectious[n] > 0 ? 0.2 : 0) + (stats.infectious[n] / pop) * 0.8})`
+      } else {
+        ctx.fillStyle = 'rgba(19, 136, 179, 0.2)'
       }
+
+      ctx.fill(path)
 
       if (ctx.isPointInPath(path, x, y)) {
         ctx.lineWidth = 1
-        ctx.strokeStyle = '#333'
+        ctx.strokeStyle = 'rgb(9, 56, 94, 0.7)'
         setCurrentCounty({ name, n, pop, x: mouse.clientX, y: mouse.clientY })
       } else {
-        ctx.strokeStyle = 'darkgrey'
+        ctx.strokeStyle = 'rgb(9, 56, 94, 0.7)'
         ctx.lineWidth = 0.3
       }
       ctx.stroke(path)

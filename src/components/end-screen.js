@@ -11,7 +11,7 @@ export const EndScreen = () => {
   const infected = 326378450 - susceptible
 
   return (
-    state === SIMULATION_STATE_FINISHED && (
+    state === SIMULATION_STATE_FINISHED && false && (
       <div id='end-screen'>
         <div>
           <h1>Pedamic Ended</h1>

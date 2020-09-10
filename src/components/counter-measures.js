@@ -23,11 +23,11 @@ const MAX_TESTS = 32624540 * 100;
 
 export const CounterMeasures = () => (
   <div id='counter-measures'>
-    <Measure title='Social Distancing' name='socialDistancingFactor' marks={{0: 'no restrictions', 50: 'moderate', 90: 'strict', 100: 'unrealistic'}}/>
+    <Measure title='Social Distancing' name='socialDistancingFactor' marks={{0: 'none', 50: 'moderate', 90: 'strict', 100: 'unrealistic'}}/>
     <Measure title='Mask Adoption' name='maskAdoption' marks={{0: '0%', 100: '100%'}} />
     <Measure title='Travel' name='travelDampingFactor' marks={{0: 'normal', 100: 'no travel'}} />
     <Measure title='Domestic Travel' name='domesticTravelDampingFactor' marks={{0: 'normal', 100: 'no travel'}} />
     <Measure title='App Installs' name='appFactor' marks={{0: '0%', 100: '100%'}} />
-    <Measure title='Test per day' name='testCapacity' marks={{0: '0', [MAX_TESTS]: '300 Mio.'}} max={MAX_TESTS} />
+    <Measure title='Quarantine tests per day' name='testCapacity' marks={{0: '0', [MAX_TESTS]: '300 Mio.'}} max={MAX_TESTS} />
   </div>
 )

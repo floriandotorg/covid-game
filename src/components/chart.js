@@ -22,7 +22,8 @@ export const Chart = ({ y, x, name, color, min, max, line, log, type = 'scatter'
       ]}
       layout={{
         showlegend: false,
-        plot_bgcolor: 'rgb(0, 0, 0)',
+        plot_bgcolor: 'transparent',
+        paper_bgcolor: 'transparent',
         autosize: true,
         margin: {
           l: 0,
