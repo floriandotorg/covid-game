@@ -28,8 +28,7 @@ module.exports = merge(common, {
     new CopyPlugin({
       patterns: [
         'src/sim*js',
-        'src/*.wasm',
-        'src/*.mp3'
+        'src/*.wasm'
       ]
     }),
     new webpack.optimize.ModuleConcatenationPlugin()
